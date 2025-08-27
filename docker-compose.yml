@@ -1,0 +1,30 @@
+services:
+  music-downloader:
+    build: 
+      context: .
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount your local Music directory to the container's Music directory
+      - ${HOME}/Music:/app/Music
+      # Mount cookies file (read-write so yt-dlp can update it)
+      - ./cookies.txt:/app/cookies.txt
+      # Mount beets config - make sure this directory exists and has proper permissions
+      - ${HOME}/.config/beets:/home/appuser/.config/beets
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=production
+      - APP_ENV=docker
+    restart: unless-stopped
+    container_name: music-downloader
+    networks:
+      - music-network
+    # Ensure the container has the right user context
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
+
+networks:
+  music-network:
+    driver: bridge
