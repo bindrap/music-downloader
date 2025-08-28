@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Music Downloader</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .tab-container {
+            margin-bottom: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+            color: #333;
+            transform: translateY(-2px);
+        }
+
+        .tab.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .download-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .method-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .method-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .method-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .method-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .search-method .method-icon {
+            background: linear-gradient(45deg, #4ECDC4, #44A08D);
+        }
+
+        .bulk-method .method-icon {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+
+        .single-method .method-icon {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #74b9ff, #a29bfe);
+        }
+
+        .btn-sm {
+            padding: 12px 24px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .album-queue {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .queue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .queue-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .queue-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .album-info {
+            flex-grow: 1;
+        }
+
+        .album-title {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .album-artist {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .remove-btn {
+            background: #FF6B6B;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .search-results {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .search-results.active {
+            display: block;
+        }
+
+        .search-item {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .search-item:hover {
+            background: #f8f9fa;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-album-title {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .search-artist {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .search-year {
+            color: #999;
+            font-size: 0.8rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #4ECDC4, #44A08D);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .status-container.active {
+            display: block;
+        }
+
+        .status-item {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .status-searching {
+            background: #FFF3CD;
+            border-left: 4px solid #FFC107;
+            color: #856404;
+        }
+
+        .status-downloading {
+            background: #CCE5FF;
+            border-left: 4px solid #007BFF;
+            color: #004085;
+        }
+
+        .status-completed {
+            background: #D4F1D4;
+            border-left: 4px solid #28A745;
+            color: #155724;
+        }
+
+        .status-error {
+            background: #F8D7DA;
+            border-left: 4px solid #DC3545;
+            color: #721C24;
+        }
+
+        .library-container {
+            margin-top: 30px;
+        }
+
+        .artist-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .artist-header {
+            padding: 20px;
+            background: linear-gradient(45deg, #74b9ff, #a29bfe);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .artist-header:hover {
+            background: linear-gradient(45deg, #5a9cff, #8a7efe);
+        }
+
+        .artist-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .album-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+        }
+
+        .albums-list {
+            display: none;
+            padding: 20px;
+            background: white;
+        }
+
+        .albums-list.active {
+            display: block;
+        }
+
+        .album-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .album-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .album-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .track-count {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .delete-btn {
+            background: #FF6B6B;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #FF5252;
+            transform: scale(1.05);
+        }
+
+        .help-text {
+            background: #E3F2FD;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #1565C0;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 20px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                border-radius: 8px;
+                margin-bottom: 5px;
+            }
+            
+            .artist-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .download-methods {
+                grid-template-columns: 1fr;
+            }
+
+            .queue-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Enhanced Music Downloader</h1>
+            <p>Download and manage your Navidrome music library</p>
+        </div>
+
+        <div class="main-content">
+            <div class="tab-container">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('download')">Download</button>
+                    <button class="tab" onclick="switchTab('library')">Library</button>
+                    <button class="tab" onclick="switchTab('manage')">Manage</button>
+                </div>
+
+                <!-- Download Tab -->
+                <div class="tab-content active" id="download">
+                    <div class="download-methods">
+                        <!-- Search & Select Method -->
+                        <div class="method-card search-method">
+                            <div class="method-title">
+                                <div class="method-icon">🔍</div>
+                                Search & Select Albums
+                            </div>
+                            <div class="form-group">
+                                <label>Search for albums</label>
+                                <input type="text" id="albumSearch" placeholder="Search by artist, album, or both...">
+                                <div class="search-results" id="searchResults"></div>
+                            </div>
+                            <div class="help-text">
+                                Type to search YouTube Music to add to your download queue.
+                            </div>
+                        </div>
+
+                        <!-- Bulk Entry Method -->
+                        <div class="method-card bulk-method">
+                            <div class="method-title">
+                                <div class="method-icon">📝</div>
+                                Bulk Album Entry
+                            </div>
+                            <div class="form-group">
+                                <label>Paste album list</label>
+                                <textarea id="bulkAlbums" rows="4" placeholder="Pink Floyd - Dark Side of the Moon&#10;Led Zeppelin - IV&#10;The Beatles - Abbey Road"></textarea>
+                                <button class="btn btn-secondary btn-sm" onclick="parseBulkAlbums()">Parse & Add to Queue</button>
+                            </div>
+                            <div class="help-text">
+                                Paste a list of albums, one per line. Format: "Artist - Album"
+                            </div>
+                        </div>
+
+                        <!-- Single Song Downloads -->
+                        <div class="method-card single-method">
+                            <div class="method-title">
+                                <div class="method-icon">🎵</div>
+                                Single Song Downloads
+                            </div>
+                            <div class="form-group">
+                                <label>Download Song by URL</label>
+                                <input type="url" id="songUrl" placeholder="https://www.youtube.com/watch?v=...">
+                                <button class="btn btn-sm" onclick="downloadSong()">Download from URL</button>
+                            </div>
+                            <div class="form-group">
+                                <label>Download by Artist & Title</label>
+                                <input type="text" id="trackArtist" placeholder="Artist name">
+                                <input type="text" id="trackTitle" placeholder="Song title">
+                                <button class="btn btn-sm" onclick="downloadTrack()">Search & Download</button>
+                            </div>
+                            <div class="help-text">
+                                Download individual songs by URL or by searching artist + title.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download Queue -->
+                    <div class="album-queue">
+                        <div class="queue-header">
+                            <h3>Download Queue (<span id="queueCount">0</span> albums)</h3>
+                            <div>
+                                <button class="btn btn-secondary" onclick="clearQueue()" style="width: auto; margin-right: 10px;">Clear All</button>
+                                <button class="btn" onclick="startDownload()" id="downloadBtn" disabled style="width: auto;">Download All</button>
+                            </div>
+                        </div>
+                        <div id="queueContainer">
+                            <p style="color: #666; text-align: center;">No albums queued for download</p>
+                        </div>
+                        <div class="progress-bar" id="progressBar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div id="currentDownload" style="display: none; margin-top: 10px; font-weight: 600;"></div>
+                    </div>
+                </div>
+
+                <!-- Library Tab -->
+                <div class="tab-content" id="library">
+                    <div class="form-group">
+                        <button class="btn" onclick="refreshLibrary()">Refresh Library</button>
+                    </div>
+                    
+                    <div class="library-container" id="libraryContainer">
+                        {% if library %}
+                            {% for artist, albums in library.items() %}
+                            <div class="artist-item">
+                                <div class="artist-header" onclick="toggleArtist('{{ artist }}')">
+                                    <span class="artist-name">{{ artist }}</span>
+                                    <span class="album-count">{{ albums|length }} album(s)</span>
+                                </div>
+                                <div class="albums-list" id="albums-{{ artist }}">
+                                    {% for album in albums %}
+                                    <div class="album-item">
+                                        <div class="album-info">
+                                            <div class="album-name">{{ album.name }}</div>
+                                            <div class="track-count">{{ album.track_count }} track(s)</div>
+                                        </div>
+                                        <button class="delete-btn" onclick="deleteAlbum('{{ artist }}', '{{ album.name }}')">
+                                            Delete Album
+                                        </button>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p>No music library found. Start by downloading some albums!</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Manage Tab -->
+                <div class="tab-content" id="manage">
+                    <div class="form-group">
+                        <label>Delete Entire Artist</label>
+                        <input type="text" id="deleteArtistName" placeholder="Artist name to delete">
+                        <div class="help-text">
+                            ⚠️ This will permanently delete all albums and songs by this artist!
+                        </div>
+                        <button class="btn btn-danger" onclick="deleteArtist()">Delete Artist</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Delete Specific Album</label>
+                        <input type="text" id="deleteAlbumArtist" placeholder="Artist name">
+                        <input type="text" id="deleteAlbumName" placeholder="Album name">
+                        <button class="btn btn-danger" onclick="deleteSpecificAlbum()">Delete Album</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Container -->
+            <div class="status-container" id="statusContainer">
+                <h3>Download Status</h3>
+                <div id="statusContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let downloadQueue = [];
+        let searchTimeout;
+        let currentDownloads = {};
+
+        // Search functionality
+        document.getElementById('albumSearch').addEventListener('input', function() {
+            const query = this.value.trim();
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (query.length < 2) {
+                resultsContainer.classList.remove('active');
+                return;
+            }
+
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => searchAlbums(query), 500);
+        });
+
+        async function searchAlbums(query) {
+            const resultsContainer = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '<div style="padding: 15px; text-align: center;">Searching...</div>';
+            resultsContainer.classList.add('active');
+
+            try {
+                const response = await fetch('/search-albums', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+                
+                const results = await response.json();
+                displaySearchResults(results);
+            } catch (error) {
+                resultsContainer.innerHTML = '<div style="padding: 15px; color: #ff6b6b;">Search failed</div>';
+            }
+        }
+
+        function displaySearchResults(results) {
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<div style="padding: 15px; color: #666;">No results found</div>';
+                return;
+            }
+
+            let html = '';
+            results.forEach(album => {
+                const isQueued = downloadQueue.some(q => q.browseId === album.browseId);
+                html += `
+                    <div class="search-item ${isQueued ? 'queued' : ''}" onclick="addToQueue('${album.browseId}', '${album.title.replace(/'/g, "\\'")}', '${album.artist.replace(/'/g, "\\'")}', '${album.year || ''}')">
+                        <div class="search-album-title">${album.title}</div>
+                        <div class="search-artist">${album.artist}</div>
+                        ${album.year ? `<div class="search-year">${album.year}</div>` : ''}
+                        ${isQueued ? '<div style="color: #4ECDC4; font-size: 0.8rem;">✓ Already queued</div>' : ''}
+                    </div>
+                `;
+            });
+            
+            resultsContainer.innerHTML = html;
+        }
+
+        function addToQueue(browseId, title, artist, year) {
+            if (downloadQueue.some(q => q.browseId === browseId)) {
+                return;
+            }
+
+            downloadQueue.push({
+                browseId,
+                title,
+                artist,
+                year,
+                id: Date.now() + Math.random()
+            });
+
+            updateQueueDisplay();
+            document.getElementById('albumSearch').value = '';
+            document.getElementById('searchResults').classList.remove('active');
+        }
+
+        function parseBulkAlbums() {
+            const text = document.getElementById('bulkAlbums').value.trim();
+            const lines = text.split('\n').filter(line => line.trim());
+            
+            let added = 0;
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed.includes(' - ')) {
+                    const [artist, album] = trimmed.split(' - ', 2);
+                    if (artist.trim() && album.trim()) {
+                        const mockId = `search_${Date.now()}_${Math.random()}`;
+                        if (!downloadQueue.some(q => q.artist === artist.trim() && q.title === album.trim())) {
+                            downloadQueue.push({
+                                browseId: mockId,
+                                title: album.trim(),
+                                artist: artist.trim(),
+                                year: '',
+                                id: Date.now() + Math.random(),
+                                needsSearch: true
+                            });
+                            added++;
+                        }
+                    }
+                }
+            });
+
+            if (added > 0) {
+                updateQueueDisplay();
+                document.getElementById('bulkAlbums').value = '';
+                alert(`Added ${added} albums to queue`);
+            } else {
+                alert('No valid albums found. Use format: "Artist - Album"');
+            }
+        }
+
+        function removeFromQueue(id) {
+            downloadQueue = downloadQueue.filter(item => item.id !== id);
+            updateQueueDisplay();
+        }
+
+        function clearQueue() {
+            if (downloadQueue.length > 0 && confirm('Remove all albums from queue?')) {
+                downloadQueue = [];
+                updateQueueDisplay();
+            }
+        }
+
+        function updateQueueDisplay() {
+            const container = document.getElementById('queueContainer');
+            const countElement = document.getElementById('queueCount');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            countElement.textContent = downloadQueue.length;
+            downloadBtn.disabled = downloadQueue.length === 0;
+
+            if (downloadQueue.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center;">No albums queued for download</p>';
+                return;
+            }
+
+            let html = '';
+            downloadQueue.forEach(album => {
+                html += `
+                    <div class="queue-item">
+                        <div class="album-info">
+                            <div class="album-title">${album.title}</div>
+                            <div class="album-artist">${album.artist}${album.year ? ` (${album.year})` : ''}</div>
+                        </div>
+                        <button class="remove-btn" onclick="removeFromQueue(${album.id})">Remove</button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        async function startDownload() {
+            if (downloadQueue.length === 0) return;
+
+            const downloadBtn = document.getElementById('downloadBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            const currentDownload = document.getElementById('currentDownload');
+            const statusContainer = document.getElementById('statusContainer');
+
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'Downloading...';
+            progressBar.style.display = 'block';
+            currentDownload.style.display = 'block';
+            statusContainer.classList.add('active');
+
+            let completed = 0;
+            const total = downloadQueue.length;
+
+            for (let i = 0; i < downloadQueue.length; i++) {
+                const album = downloadQueue[i];
+                currentDownload.textContent = `Downloading: ${album.artist} - ${album.title}`;
+                
+                try {
+                    const response = await fetch('/download-album', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            query: `${album.artist} - ${album.title}`,
+                            browseId: album.needsSearch ? null : album.browseId
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    if (result.download_id) {
+                        startStatusTracking(result.download_id);
+                    }
+                } catch (error) {
+                    console.error('Download failed:', error);
+                }
+
+                completed++;
+                const progress = (completed / total) * 100;
+                progressFill.style.width = `${progress}%`;
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = 'Download All';
+            currentDownload.style.display = 'none';
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+            
+            downloadQueue = [];
+            updateQueueDisplay();
+        }
+
+        // Single song download functions (preserved from original)
+        function downloadSong() {
+            const url = document.getElementById('songUrl').value.trim();
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            fetch('/download-song', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    startStatusTracking(data.download_id);
+                    document.getElementById('songUrl').value = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+
+        function deleteAlbum(artist, album) {
+            if (!confirm(`Are you sure you want to delete "${album}" by "${artist}"?`)) {
+                return;
+            }
+
+            fetch('/delete-album', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ artist: artist, album: album })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert(data.message);
+                    refreshLibrary();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+
+        function refreshLibrary() {
+            fetch('/library')
+            .then(response => response.json())
+            .then(library => {
+                const container = document.getElementById('libraryContainer');
+                if (Object.keys(library).length === 0) {
+                    container.innerHTML = '<p>No music library found. Start by downloading some albums!</p>';
+                    return;
+                }
+
+                let html = '';
+                for (const [artist, albums] of Object.entries(library)) {
+                    html += `
+                        <div class="artist-item">
+                            <div class="artist-header" onclick="toggleArtist('${artist}')">
+                                <span class="artist-name">${artist}</span>
+                                <span class="album-count">${albums.length} album(s)</span>
+                            </div>
+                            <div class="albums-list" id="albums-${artist}">`;
+                    
+                    for (const album of albums) {
+                        html += `
+                            <div class="album-item">
+                                <div class="album-info">
+                                    <div class="album-name">${album.name}</div>
+                                    <div class="track-count">${album.track_count} track(s)</div>
+                                </div>
+                                <button class="delete-btn" onclick="deleteAlbum('${artist}', '${album.name}')">
+                                    Delete Album
+                                </button>
+                            </div>`;
+                    }
+                    
+                    html += `
+                            </div>
+                        </div>`;
+                }
+                
+                container.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error refreshing library:', error);
+            });
+        }
+
+        function toggleArtist(artist) {
+            const albumsList = document.getElementById(`albums-${artist}`);
+            albumsList.classList.toggle('active');
+        }
+
+        function startStatusTracking(downloadId) {
+            currentDownloads[downloadId] = true;
+            document.getElementById('statusContainer').classList.add('active');
+            
+            updateStatus(downloadId);
+            
+            const interval = setInterval(() => {
+                if (!currentDownloads[downloadId]) {
+                    clearInterval(interval);
+                    return;
+                }
+                updateStatus(downloadId);
+            }, 2000);
+        }
+
+        function updateStatus(downloadId) {
+            fetch(`/download-status/${downloadId}`)
+            .then(response => response.json())
+            .then(status => {
+                const statusContent = document.getElementById('statusContent');
+                const statusClass = `status-${status.status}`;
+                
+                let statusHtml = `<div class="${statusClass} status-item">
+                    <strong>Download ${downloadId}:</strong> ${status.message}
+                </div>`;
+                
+                const existingStatus = document.getElementById(`status-${downloadId}`);
+                if (existingStatus) {
+                    existingStatus.outerHTML = `<div id="status-${downloadId}">${statusHtml}</div>`;
+                } else {
+                    statusContent.innerHTML += `<div id="status-${downloadId}">${statusHtml}</div>`;
+                }
+                
+                if (status.status === 'completed' || status.status === 'error') {
+                    currentDownloads[downloadId] = false;
+                    
+                    setTimeout(() => {
+                        const statusElement = document.getElementById(`status-${downloadId}`);
+                        if (statusElement) {
+                            statusElement.remove();
+                        }
+                        
+                        if (Object.keys(currentDownloads).every(id => !currentDownloads[id])) {
+                            setTimeout(() => {
+                                document.getElementById('statusContainer').classList.remove('active');
+                                statusContent.innerHTML = '';
+                            }, 3000);
+                        }
+                    }, 5000);
+                    
+                    if (status.status === 'completed') {
+                        setTimeout(refreshLibrary, 1000);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+                currentDownloads[downloadId] = false;
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshLibrary();
+            updateQueueDisplay();
+        });
+    </script>
+</body>
+</html>
+                alert('An error occurred');
+            });
+        }
+
+        function downloadTrack() {
+            const artist = document.getElementById('trackArtist').value.trim();
+            const title = document.getElementById('trackTitle').value.trim();
+            
+            if (!artist || !title) {
+                alert('Please enter both artist and title');
+                return;
+            }
+
+            fetch('/download-track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ artist: artist, title: title })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    startStatusTracking(data.download_id);
+                    document.getElementById('trackArtist').value = '';
+                    document.getElementById('trackTitle').value = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+
+        // Tab switching and other functions (preserved from original)
+        function switchTab(tabName) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'library') {
+                refreshLibrary();
+            }
+        }
+
+        function deleteArtist() {
+            const artist = document.getElementById('deleteArtistName').value.trim();
+            if (!artist) {
+                alert('Please enter artist name');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete ALL music by "${artist}"? This cannot be undone!`)) {
+                return;
+            }
+
+            fetch('/delete-artist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ artist: artist })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert(data.message);
+                    document.getElementById('deleteArtistName').value = '';
+                    refreshLibrary();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+
+        function deleteSpecificAlbum() {
+            const artist = document.getElementById('deleteAlbumArtist').value.trim();
+            const album = document.getElementById('deleteAlbumName').value.trim();
+            
+            if (!artist || !album) {
+                alert('Please enter both artist and album name');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete "${album}" by "${artist}"?`)) {
+                return;
+            }
+
+            fetch('/delete-album', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ artist: artist, album: album })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert(data.message);
+                    document.getElementById('deleteAlbumArtist').value = '';
+                    document.getElementById('deleteAlbumName').value = '';
+                    refreshLibrary();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);

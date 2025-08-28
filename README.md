@@ -240,3 +240,8 @@ This project is for personal use only. Respect YouTube's Terms of Service and on
 ## Disclaimer
 
 This tool is intended for personal use with music you own or have permission to download. Users are responsible for complying with applicable laws and terms of service.
+
+
+UPDATES
+
+pip install python-dotenv

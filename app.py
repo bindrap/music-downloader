@@ -11,7 +11,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from ytmusicapi import YTMusic
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3, APIC
-from mutagen.flac import FLAC
+from mutagen.flac import FLAC, Picture
 from mutagen.id3 import ID3NoHeaderError
 import shutil
 from urllib.parse import urlparse, parse_qs
@@ -101,6 +101,29 @@ class MusicDownloader:
     def normalize_title(self, title):
         """Normalize a title for matching (remove punctuation, lowercase)."""
         return re.sub(r'\W+', '', title).lower()
+
+    def search_albums(self, query):
+        """Search YouTube Music for albums and return formatted results."""
+        try:
+            if not self.ytmusic:
+                return []
+            
+            results = self.ytmusic.search(query, filter="albums")
+            formatted_results = []
+            
+            for album in results[:10]:  # Limit to 10 results
+                formatted_results.append({
+                    'browseId': album.get('browseId'),
+                    'title': album.get('title'),
+                    'artist': album.get('artists', [{}])[0].get('name', 'Unknown'),
+                    'year': album.get('year'),
+                    'thumbnails': album.get('thumbnails', [])
+                })
+            
+            return formatted_results
+        except Exception as e:
+            print(f"Error searching albums: {e}")
+            return []
 
     def search_album(self, query):
         """Search YouTube Music for an album and return the first result."""
@@ -217,7 +240,7 @@ class MusicDownloader:
                 try:
                     audio = FLAC(path)
                     audio.clear_pictures()  # remove existing pictures
-                    pic = mutagen.flac.Picture()
+                    pic = Picture()
                     pic.type = 3  # Cover (front)
                     pic.mime = "image/jpeg"
                     pic.desc = "Cover"
@@ -464,11 +487,25 @@ def index():
     library = downloader.get_library_structure()
     return render_template('index.html', library=library)
 
+@app.route('/search-albums', methods=['POST'])
+def search_albums():
+    """Search YouTube Music for albums."""
+    data = request.get_json()
+    query = data.get('query', '').strip()
+    
+    if not query or len(query) < 2:
+        return jsonify([])
+    
+    results = downloader.search_albums(query)
+    return jsonify(results)
+
+
 @app.route('/download-album', methods=['POST'])
 def download_album():
     """Handle album download requests."""
     data = request.get_json()
     query = data.get('query', '').strip()
+    browse_id = data.get('browseId')
     
     if not query:
         return jsonify({'error': 'Query is required'}), 400
@@ -498,7 +535,12 @@ def download_album():
                 with download_lock:
                     download_status[download_id]['message'] = f'Searching for {artist} - {album}...'
                 
-                album_info = downloader.search_album(f"{artist} {album}")
+                # Use provided browseId if available, otherwise search
+                if browse_id:
+                    album_info = {'browseId': browse_id}
+                else:
+                    album_info = downloader.search_album(f"{artist} {album}")
+                
                 if album_info:
                     downloader.download_album(album_info, MUSIC_DIR, artist, album, download_id)
                 else:
