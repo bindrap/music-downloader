@@ -11,6 +11,8 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from ytmusicapi import YTMusic
 from mutagen.easyid3 import EasyID3
 from mutagen.id3 import ID3, APIC
+from mutagen.flac import FLAC
+from mutagen.id3 import ID3NoHeaderError
 import shutil
 from urllib.parse import urlparse, parse_qs
 
@@ -50,6 +52,34 @@ def set_file_permissions(path):
 # Global variables for download status
 download_status = {}
 download_lock = threading.Lock()
+
+def run_download_with_fallback(output_template, url, cookies=True):
+    """Try FLAC first, fallback to MP3 if FLAC fails."""
+    base_cmd = [
+        "yt-dlp",
+        "--extract-audio",
+        "--add-metadata",
+        "--embed-thumbnail",
+        "-o", output_template,
+        url
+    ]
+    if cookies:
+        base_cmd += ["--cookies", COOKIES_FILE]
+
+    # Try FLAC first
+    cmd_flac = base_cmd + ["--audio-format", "flac", "--audio-quality", "0"]
+    result = subprocess.run(cmd_flac, capture_output=True, text=True)
+    if result.returncode == 0:
+        print("Successfully downloaded in FLAC format")
+        return result
+
+    print("FLAC failed or unavailable, retrying with MP3...")
+    # Fallback: MP3 320 kbps
+    cmd_mp3 = base_cmd + ["--audio-format", "mp3", "--audio-quality", "0"]
+    result = subprocess.run(cmd_mp3, capture_output=True, text=True)
+    if result.returncode == 0:
+        print("Successfully downloaded in MP3 format")
+    return result
 
 class MusicDownloader:
     def __init__(self):
@@ -99,15 +129,33 @@ class MusicDownloader:
             track_order[self.normalize_title(raw_title)] = idx
             track_order[self.normalize_title(clean_title)] = idx
 
-        mp3_files = [f for f in os.listdir(folder) if f.lower().endswith(".mp3")]
-        for fallback_idx, file in enumerate(sorted(mp3_files), start=1):
+        # Get both MP3 and FLAC files
+        audio_files = [f for f in os.listdir(folder) if f.lower().endswith((".mp3", ".flac"))]
+        
+        for fallback_idx, file in enumerate(sorted(audio_files), start=1):
             path = os.path.join(folder, file)
             try:
-                audio = EasyID3(path)
+                # Handle both MP3 and FLAC files
+                if file.lower().endswith(".mp3"):
+                    try:
+                        audio = EasyID3(path)
+                    except ID3NoHeaderError:
+                        # Create ID3 tag if it doesn't exist
+                        audio = EasyID3()
+                        audio.save(path)
+                        audio = EasyID3(path)
+                elif file.lower().endswith(".flac"):
+                    audio = FLAC(path)
+                else:
+                    continue
+
                 audio["albumartist"] = albumartist
 
                 # Clean title
                 title = audio.get("title", [os.path.splitext(file)[0]])[0]
+                if isinstance(title, list):
+                    title = title[0]
+                
                 cleaned_title = re.sub(r"^\d+\s+", "", title)  # remove leading numbers
                 cleaned_title = re.sub(r"\(feat\. .*?\)", "", cleaned_title, flags=re.IGNORECASE)
                 cleaned_title = re.sub(r"\(Explicit\)", "", cleaned_title, flags=re.IGNORECASE)
@@ -147,7 +195,7 @@ class MusicDownloader:
         with open(cover_path, "wb") as img_file:
             img_file.write(img_data)
 
-        print("Embedding real album art into MP3 files...")
+        print("Embedding real album art into audio files...")
         for file in os.listdir(folder):
             if file.lower().endswith(".mp3"):
                 path = os.path.join(folder, file)
@@ -162,6 +210,20 @@ class MusicDownloader:
                         data=img_data
                     ))
                     audio.save(v2_version=3)
+                except Exception as e:
+                    print(f"Could not embed art for {file}: {e}")
+            elif file.lower().endswith(".flac"):
+                path = os.path.join(folder, file)
+                try:
+                    audio = FLAC(path)
+                    audio.clear_pictures()  # remove existing pictures
+                    pic = mutagen.flac.Picture()
+                    pic.type = 3  # Cover (front)
+                    pic.mime = "image/jpeg"
+                    pic.desc = "Cover"
+                    pic.data = img_data
+                    audio.add_picture(pic)
+                    audio.save()
                 except Exception as e:
                     print(f"Could not embed art for {file}: {e}")
 
@@ -219,23 +281,12 @@ class MusicDownloader:
             with download_lock:
                 download_status[download_id]['message'] = f'Downloading tracks from {artist_name} - {album_name}...'
 
-            # Download tracks
-            cmd = [
-                "yt-dlp",
-                "--extract-audio",
-                "--audio-format", "mp3",
-                "--audio-quality", "0",
-                "--embed-metadata",
-                "--embed-thumbnail",
-                "--add-metadata",
-                "--cookies", COOKIES_FILE,
-                "-o", os.path.join(album_folder, "%(title)s.%(ext)s"),
-                search_url
-            ]
+            # Download tracks with fallback
+            output_template = os.path.join(album_folder, "%(title)s.%(ext)s")
+            result = run_download_with_fallback(output_template, search_url, cookies=True)
             
-            result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode != 0:
-                raise Exception(f"yt-dlp failed: {result.stderr}")
+                raise Exception(f"Download failed: {result.stderr}")
 
             with download_lock:
                 download_status[download_id]['message'] = 'Processing album art and metadata...'
@@ -308,14 +359,7 @@ class MusicDownloader:
             with download_lock:
                 download_status[download_id]['message'] = 'Downloading song...'
 
-            cmd = [
-                "yt-dlp",
-                "-x", "--audio-format", "mp3",
-                "--add-metadata", "--embed-thumbnail",
-                "-o", output_template,
-                url
-            ]
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = run_download_with_fallback(output_template, url, cookies=False)
             if result.returncode != 0:
                 raise Exception(result.stderr or "Unknown error during song download.")
 
@@ -359,14 +403,7 @@ class MusicDownloader:
             with download_lock:
                 download_status[download_id]['message'] = 'Downloading song...'
 
-            cmd = [
-                "yt-dlp",
-                "-x", "--audio-format", "mp3",
-                "--add-metadata", "--embed-thumbnail",
-                "-o", output_template,
-                url
-            ]
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = run_download_with_fallback(output_template, url, cookies=False)
             if result.returncode != 0:
                 raise Exception(result.stderr or "Unknown error during artist/song download.")
 
@@ -408,11 +445,12 @@ class MusicDownloader:
                 for album_dir in os.listdir(artist_path):
                     album_path = os.path.join(artist_path, album_dir)
                     if os.path.isdir(album_path):
-                        # Count MP3 files in album
-                        mp3_count = len([f for f in os.listdir(album_path) if f.lower().endswith('.mp3')])
+                        # Count audio files in album (both MP3 and FLAC)
+                        audio_count = len([f for f in os.listdir(album_path) 
+                                         if f.lower().endswith(('.mp3', '.flac'))])
                         library[artist_dir].append({
                             'name': album_dir,
-                            'track_count': mp3_count
+                            'track_count': audio_count
                         })
 
         return library
