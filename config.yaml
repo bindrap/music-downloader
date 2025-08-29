@@ -1,0 +1,24 @@
+directory: /app/Music
+library: /app/config/musiclibrary.db
+
+import:
+  move: false
+  copy: false
+  write: true
+  resume: true
+  incremental: true
+  quiet_fallback: skip
+  default_action: apply
+  timid: false
+  log: /app/config/import.log
+
+plugins:
+  - fetchart
+  - embedart
+  - scrub
+  - zero
+  - lastgenre
+  - duplicates
+  - edit
+  - ftintitle
+  - inline

@@ -1,57 +1,38 @@
 #!/bin/bash
 
-# Setup script for Music Downloader Docker container
+# Setup script for music downloader
+echo "Setting up music downloader environment..."
 
-echo "Setting up Music Downloader..."
+# Create necessary directories
+mkdir -p beets_config
+mkdir -p "${HOME}/Music"
 
-# Get current user ID and group ID
+# Create cookies file if it doesn't exist
+if [ ! -f cookies.txt ]; then
+    echo "# Add your cookies here for premium quality downloads" > cookies.txt
+    echo "Created cookies.txt - add your YouTube cookies for better quality downloads"
+fi
+
+# Set proper permissions for beets config directory
+chmod 755 beets_config
+
+# Get user ID and group ID for Docker
 export USER_ID=$(id -u)
 export GROUP_ID=$(id -g)
 
-echo "User ID: $USER_ID"
-echo "Group ID: $GROUP_ID"
-
-# Create necessary directories
-echo "Creating necessary directories..."
-mkdir -p ~/Music
-mkdir -p ~/.config/beets
-
-# Set proper permissions for Music directory
-echo "Setting permissions for Music directory..."
-chmod 755 ~/Music
-
-# Check if beets config exists, if not create a basic one
-if [ ! -f ~/.config/beets/config.yaml ]; then
-    echo "Creating basic beets configuration..."
-    cat > ~/.config/beets/config.yaml << EOF
-directory: ~/Music
-library: ~/.config/beets/musiclibrary.db
-
-import:
-    move: yes
-    write: yes
-    
-paths:
-    default: \$albumartist/\$album/\$track \$title
-
-plugins: fetchart embedart info
-EOF
-fi
-
-# Make sure beets config directory has proper permissions
-chmod -R 755 ~/.config/beets
-
-# Create .env file for docker-compose
-echo "Creating .env file..."
-cat > .env << EOF
-USER_ID=$USER_ID
-GROUP_ID=$GROUP_ID
-EOF
+echo "USER_ID=${USER_ID}" > .env
+echo "GROUP_ID=${GROUP_ID}" >> .env
 
 echo "Setup complete!"
 echo ""
-echo "Now you can run:"
-echo "  docker-compose up --build"
+echo "Next steps:"
+echo "1. Build and run the container: docker-compose up --build"
+echo "2. The app will be available at http://localhost:5000"
+echo "3. For better quality downloads, add your YouTube cookies to cookies.txt"
 echo ""
-echo "Or to run in background:"
-echo "  docker-compose up -d --build"
+echo "The beets configuration will:"
+echo "- Fix track ordering based on YouTube Music metadata"
+echo "- Download high-quality album art from multiple sources"
+echo "- Clean up track titles (remove 'Explicit' tags, track numbers, etc.)"
+echo "- Embed proper album art replacing YouTube thumbnails"
+echo "- Set correct albumartist tags for compilation detection"

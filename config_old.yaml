@@ -1,0 +1,143 @@
+# Main library settings
+directory: /app/Music
+library: /app/config/musiclibrary.db
+
+# Import options — Beets is the final authority
+import:
+  move: true                    # Move files into Beets directory
+  copy: false                   # Don't copy (move is cleaner)
+  write: true                   # ✅ Always write corrected metadata to files
+  resume: true                  # Resume interrupted imports
+  incremental: true             # Skip already-imported files
+  quiet_fallback: skip          # Skip if unsure, don't prompt
+  default_action: apply         # Auto-apply match (no manual confirm)
+  timid: false                  # Don't ask questions — trust auto-match
+  log: /app/config/import.log   # Log import actions
+
+# Matching preferences — prioritize accuracy
+match:
+  preferred:
+    media: ['Digital Media|File', 'CD']  # Prefer digital or CD sources
+    countries: ['US', 'GB', 'XW']        # Prefer US/UK metadata
+    original_year: true                  # Match original release year
+  distance_weights:
+    source: 2.0
+    artist: 3.0
+    album: 3.0
+    media: 1.0
+    mediums: 1.0
+    year: 1.0
+    country: 0.5
+    label: 0.5
+    catalognum: 0.5
+    albumdisambig: 0.5
+    album_id: 5.0
+    tracks: 2.0
+    missing_tracks: 0.9
+    unmatched_tracks: 0.6
+    track_title: 3.0
+    track_artist: 2.0
+    track_index: 1.0     # ← Critical: weights track number heavily
+    track_length: 2.0
+    track_id: 5.0
+  strong_rec_thresh: 0.04
+  medium_rec_thresh: 0.25
+  rec_gap_thresh: 0.25
+  max_rec:
+    missing_tracks: medium
+    unmatched_tracks: medium
+
+# Plugins — enable full metadata control
+plugins:
+  - fetchart          # Download album art
+  - embedart          # Embed art into files
+  - scrub             # Clean invalid data (e.g. ID3 junk)
+  - zero              # Clear unwanted tags (e.g. comments)
+  - lastgenre         # Fetch genres from Last.fm
+  - duplicates        # Detect duplicates
+  - edit              # Manually edit on conflict
+  - ftintitle         # Handle "feat." in titles properly
+  - inline            # Custom field transformations
+
+# Plugin configurations
+
+# 1. fetchart — Get the BEST cover art
+fetchart:
+  auto: true                          # Auto-download on import
+  cautious: true                      # Avoid low-quality or wrong matches
+  cover_names: cover front art album  # Recognize these filenames
+  sources:
+    - coverart                        # ✅ Cover Art Archive (best quality)
+    - itunes                          # ✅ High-res, reliable
+    - amazon                          # Good coverage
+    - albumart                        # Fan-made, fallback
+    - wikipedia                       # Sometimes has unique art
+  store_source: false                 # Don't save source info
+  enforce_ratio: false                # Don't reject non-square covers
+  min_width: 1000                     # ✅ Prefer 1000px+ wide art
+  max_width: 0                        # No max
+  quality: 0                          # Best quality (lossless if available)
+
+# 2. embedart — Embed high-res art into files
+embedart:
+  auto: true                          # ✅ Embed on import
+  maxwidth: 1600                      # ✅ Downscale to 1600px max (keeps quality)
+  remove_art_file: false              # Keep cover.jpg in folder
+  ifempty: no                         # ✅ Always replace existing art (e.g. YouTube thumbnails)
+  compare_threshold: 50               # Replace if new art is 50%+ larger
+
+# 3. scrub — Remove broken or unwanted metadata
+scrub:
+  auto: true                          # ✅ Clean metadata on import
+  fields: all                         # Clean all problematic fields
+
+# 4. zero — Clear unwanted tags
+zero:
+  fields: comments                    # Remove comments
+  update_database: true               # Sync cleared fields to DB
+
+# 5. lastgenre — Add accurate genres
+lastgenre:
+  auto: true
+  source: album
+  min_weight: 10
+  count: 1
+  fallback: ''
+  canonical: yes
+
+# 6. ftintitle — Clean "feat." from titles, put in `artists` field
+ftintitle:
+  auto: yes
+
+# 7. inline — Fix track numbers if missing
+inline:
+  track_fix:
+    value: |
+      if not item.track:
+          return 1  # fallback
+      return item.track
+
+# Paths — Clean, consistent organization
+paths:
+  default: $albumartist/$album%aunique{}/$track $title
+  singleton: Non-Album/$artist - $title
+  comp: Compilations/$album%aunique{}/$track $title
+  albumtype:soundtrack: Soundtracks/$album/$track $title
+  # If no album artist, use artist
+  albumartist_?: $artist/$album/$track $title
+
+# UI settings
+ui:
+  color: false
+  length_diff_thresh: 10.0
+
+# Track numbering
+per_disc_numbering: false      # Use continuous numbering
+clutter: .DS_Store,Thumbs.db   # Ignore these files
+
+# Metadata
+original_date: false           # Use original release date
+va_name: "Various Artists"     # Standard VA name
+
+# Optional: Reject matches below a threshold
+ignored: missing_tracks        # Skip albums with missing tracks

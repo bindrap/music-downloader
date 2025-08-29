@@ -12,12 +12,15 @@ services:
       - ${HOME}/Music:/app/Music
       # Mount cookies file (read-write so yt-dlp can update it)
       - ./cookies.txt:/app/cookies.txt
-      # Mount beets config - make sure this directory exists and has proper permissions
-      - ${HOME}/.config/beets:/home/appuser/.config/beets
+      # Mount beets config directory - this will persist the beets database
+      - ./beets_config:/app/config
+      # Mount the beets config file
+      - ./config.yaml:/app/config.yaml
     environment:
       - PYTHONUNBUFFERED=1
       - FLASK_ENV=production
       - APP_ENV=docker
+      - BEETSDIR=/app/config
     restart: unless-stopped
     container_name: music-downloader
     networks:
