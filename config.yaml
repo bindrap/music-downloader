@@ -2,15 +2,16 @@ directory: /app/Music
 library: /app/config/musiclibrary.db
 
 import:
-  move: false
-  copy: false
-  write: true
-  resume: true
-  incremental: true
-  quiet_fallback: skip
-  default_action: apply
-  timid: false
+  move: no               # ⬅️ don’t move/rename
+  copy: no
+  write: yes             # always write tags
+  resume: yes
+  autotag: yes           # force autotagging
+  timid: no
+  incremental: yes
+  quiet: yes             # no prompts
   log: /app/config/import.log
+  default_action: apply
 
 plugins:
   - fetchart
@@ -18,7 +19,25 @@ plugins:
   - scrub
   - zero
   - lastgenre
-  - duplicates
-  - edit
-  - ftintitle
   - inline
+
+fetchart:
+  auto: yes
+  cautious: no
+  minwidth: 1000
+  sources: coverart itunes amazon fanarttv wikipedia
+
+embedart:
+  auto: yes
+  ifempty: no   # ⬅️ always overwrite existing bad art
+
+scrub:
+  auto: yes
+
+zero:
+  fields: comments
+
+paths:
+  default: $albumartist/$album/$track $title
+  singleton: Non-Album/$artist - $title
+  comp: Compilations/$album/$track $title
